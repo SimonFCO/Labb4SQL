@@ -20,20 +20,20 @@ namespace SchoolProject
             }
             else
             {
-                using var conn = new SqlConnection(_connString);
-                conn.Open();
+                using var connection = new SqlConnection(_connString);
+                connection.Open();
 
                 try
                 {
-                    string roleId = SelectFromList(conn, "SELECT RoleId, RoleName FROM Role", "Välj Roll");
-                    string departmentId = SelectFromList(conn, "SELECT DepartmentId, DepartmentName FROM Department", "Välj Avdelning");
+                    string roleId = SelectFromList(connection, "SELECT RoleId, RoleName FROM Role", "Välj Roll");
+                    string departmentId = SelectFromList(connection, "SELECT DepartmentId, DepartmentName FROM Department", "Välj Avdelning");
 
                     Console.Write("Förnamn: "); string firstName = Console.ReadLine();
                     Console.Write("Efternamn: "); string lastName = Console.ReadLine();
                     Console.Write("Lön: "); decimal.TryParse(Console.ReadLine(), out decimal salary);
 
                     string query = "INSERT INTO Staff (FirstName, LastName, RoleId, DepartmentId, Salary, HireDate) VALUES (@Fn, @Ln, @Rid, @Did, @Sal, GETDATE())";
-                    using var cmd = new SqlCommand(query, conn);
+                    using var cmd = new SqlCommand(query, connection);
                     cmd.Parameters.AddWithValue("@Fn", firstName);
                     cmd.Parameters.AddWithValue("@Ln", lastName);
                     cmd.Parameters.AddWithValue("@Rid", roleId);
@@ -54,11 +54,11 @@ namespace SchoolProject
         internal static void ShowStudentGrades()
         {
             Console.Clear();
-            using var conn = new SqlConnection(_connString);
+            using var connection = new SqlConnection(_connString);
             try
             {
-                conn.Open();
-                string studentId = SelectFromList(conn, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
+                connection.Open();
+                string studentId = SelectFromList(connection, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
 
                 Console.WriteLine($"\n---- Betyg för elev {studentId} ----");
                 string query = @"SELECT sub.SubjectName AS Ämne, g.GradeValue AS Betyg, g.DateGiven AS Datum, st.FirstName + ' ' + st.LastName AS Lärare
@@ -68,7 +68,7 @@ namespace SchoolProject
                                  JOIN Staff st ON g.TeacherId = st.StaffId
                                  WHERE g.StudentId = @studentId";
 
-                using var Command = new SqlCommand(query, conn);
+                using var Command = new SqlCommand(query, connection);
                 Command.Parameters.AddWithValue("@studentId", studentId);
 
                 using var reader = Command.ExecuteReader();
@@ -97,11 +97,16 @@ namespace SchoolProject
                 connection.Open();
                 string studentId = SelectFromList(connection, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
 
+                Console.WriteLine($"\n--- Elevens ID/Personnummer: {studentId} ---");
+
                 using var cmd = new SqlCommand("GetStudentInfo", connection);
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@StudentId", studentId);
 
                 using var reader = cmd.ExecuteReader();
+
+                if (!reader.HasRows) Console.WriteLine("Ingen ytterligare info hittades.");
+
                 while (reader.Read())
                 {
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -115,23 +120,23 @@ namespace SchoolProject
         internal static void SetGradeTransaction()
         {
             Console.Clear();
-            using var conn = new SqlConnection(_connString);
+            using var connection = new SqlConnection(_connString);
             try
             {
-                conn.Open();
+                connection.Open();
 
-                string studentId = SelectFromList(conn, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
+                string studentId = SelectFromList(connection, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
 
                 string teacherSql = "SELECT s.StaffId, s.FirstName + ' ' + s.LastName FROM Staff s JOIN Role r ON s.RoleId = r.RoleId WHERE r.RoleName LIKE '%Teacher%' OR r.RoleName LIKE '%Lärare%'";
-                string teacherId = SelectFromList(conn, teacherSql, "Välj Lärare");
+                string teacherId = SelectFromList(connection, teacherSql, "Välj Lärare");
 
-                string subjectId = SelectFromList(conn, "SELECT SubjectId, SubjectName FROM Subject", "Välj Ämne");
+                string subjectId = SelectFromList(connection, "SELECT SubjectId, SubjectName FROM Subject", "Välj Ämne");
 
                 Console.Write("Ange Betyg (A-F): ");
                 string grade = Console.ReadLine()?.ToUpper();
 
-                using var trans = conn.BeginTransaction();
-                using var cmd = new SqlCommand("INSERT INTO Grade (StudentId, TeacherId, SubjectId, GradeValue, DateGiven) VALUES (@sid, @tid, @sub, @val, GETDATE())", conn, trans);
+                using var trans = connection.BeginTransaction();
+                using var cmd = new SqlCommand("INSERT INTO Grade (StudentId, TeacherId, SubjectId, GradeValue, DateGiven) VALUES (@sid, @tid, @sub, @val, GETDATE())", connection, trans);
 
                 cmd.Parameters.AddWithValue("@sid", studentId);
                 cmd.Parameters.AddWithValue("@tid", teacherId);
@@ -157,11 +162,11 @@ namespace SchoolProject
 
         public static void ExecuteQuery(string query)
         {
-            using var conn = new SqlConnection(_connString);
+            using var connection = new SqlConnection(_connString);
             try
             {
-                conn.Open();
-                using var cmd = new SqlCommand(query, conn);
+                connection.Open();
+                using var cmd = new SqlCommand(query, connection);
                 using var reader = cmd.ExecuteReader();
                 PrintResults(reader);
             }
