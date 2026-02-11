@@ -94,8 +94,21 @@ namespace SchoolProject
             using var connection = new SqlConnection(_connString);
             try
             {
-                connection.Open();
-                string studentId = SelectFromList(connection, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
+                string studentId = "Fail";
+                Console.WriteLine("1. Välj från lista");
+                Console.WriteLine("2. Skriv in Personnummer");
+                int answer = Utilities.GetUserNumberMinMax(1,2);
+                if(answer == 1)
+                {
+                    connection.Open();
+                    studentId = SelectFromList(connection, "SELECT StudentId, FirstName + ' ' + LastName FROM Student", "Välj Elev");
+                }
+                else if(answer == 2)
+                {
+                    connection.Open();
+                    studentId = Console.ReadLine();
+                }
+                
 
                 Console.WriteLine($"\n--- Elevens ID/Personnummer: {studentId} ---");
 
