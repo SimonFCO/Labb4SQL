@@ -38,7 +38,7 @@ namespace SchoolProject
                 {
                     FullName = s.FirstName + " " + s.LastName,
                     StudentId = s.StudentId,
-                    ClassName = s.Class != null ? s.Class.ClassName : "Ingen klass"
+                    ClassName = s.Class.ClassName
                 })
                 .ToList();
 
